@@ -41,6 +41,7 @@ namespace FlightManufestMaker
             this.radFlight = new System.Windows.Forms.RadioButton();
             this.label1 = new System.Windows.Forms.Label();
             this.txtLocalNat = new System.Windows.Forms.TextBox();
+            this.lblRows = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -53,6 +54,10 @@ namespace FlightManufestMaker
             this.dataGridView1.RowTemplate.Height = 33;
             this.dataGridView1.Size = new System.Drawing.Size(1296, 604);
             this.dataGridView1.TabIndex = 0;
+            this.dataGridView1.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dataGridView1_RowsAdded);
+            this.dataGridView1.RowsRemoved += new System.Windows.Forms.DataGridViewRowsRemovedEventHandler(this.dataGridView1_RowsRemoved);
+            this.dataGridView1.UserAddedRow += new System.Windows.Forms.DataGridViewRowEventHandler(this.dataGridView1_UserAddedRow);
+            this.dataGridView1.UserDeletedRow += new System.Windows.Forms.DataGridViewRowEventHandler(this.dataGridView1_UserDeletedRow);
             // 
             // btnGenerate
             // 
@@ -150,11 +155,21 @@ namespace FlightManufestMaker
             this.txtLocalNat.Size = new System.Drawing.Size(150, 31);
             this.txtLocalNat.TabIndex = 11;
             // 
+            // lblRows
+            // 
+            this.lblRows.AutoSize = true;
+            this.lblRows.Location = new System.Drawing.Point(22, 146);
+            this.lblRows.Name = "lblRows";
+            this.lblRows.Size = new System.Drawing.Size(54, 25);
+            this.lblRows.TabIndex = 12;
+            this.lblRows.Text = "Rows";
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1320, 799);
+            this.Controls.Add(this.lblRows);
             this.Controls.Add(this.txtLocalNat);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.radFlight);
@@ -193,6 +208,7 @@ namespace FlightManufestMaker
         private System.Windows.Forms.RadioButton radFlight;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox txtLocalNat;
+        private System.Windows.Forms.Label lblRows;
     }
 }
 

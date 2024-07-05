@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Configuration;
 using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using ExcelApp = Microsoft.Office.Interop.Excel;
 
@@ -18,41 +13,29 @@ namespace FlightManufestMaker
     {
         DataTable dgTable;
 
-        //Create COM Objects to write manifest.
-        //ExcelApp.Application manifestExcel = new ExcelApp.Application();
-        //ExcelApp.Workbook manifestWorkbook;
-        //ExcelApp.Worksheet manifestWorksheet;
-        //ExcelApp.Range manifestCellrange;
-
         public frmMain()
         {
             InitializeComponent();
-            
         }
 
-        //Create COM Objects to read countries.
-        //ExcelApp.Application countryExcel = new ExcelApp.Application();
-        DataRow myNewRow;
-        DataTable myTable;
         private DataTable dtCountry;
+        private DataTable dtDocType;
 
         string localNat;
+        int gridRaws = 0;
 
         private void frmMain_Load(object sender, EventArgs e)
         {
             radShip.Checked = true;
-
             btnGenerate.Enabled = false;
             btnSave.Enabled = false;
-
-            //txtPaxCount.Text = "5";
-            //txtShipFlight.Text = "UL256";
 
             localNat = ConfigurationManager.AppSettings["localNat"];
             txtLocalNat.Text = localNat;
             txtLocalNat.ReadOnly = true;
 
             loadCountries();
+            loadDocTypes();
         }
 
         private DataTable getShipManifestColums()
@@ -93,13 +76,13 @@ namespace FlightManufestMaker
         {
             for (int i = 1; i <= paxCount; i++)
             {
-
-
                 DataRow country = rndCountry();
                 string alpha2 = country[1].ToString();
                 string alpha3 = country[2].ToString();
                 string paxType = "FOREIGN";
-                string docType = "NP";
+
+                DataRow docType = rndDocType();
+                string type1 = docType[1].ToString();
 
                 if (alpha3 == localNat)
                 {
@@ -108,11 +91,11 @@ namespace FlightManufestMaker
 
                 if (radShip.Checked)
                 {
-                        dgTable.Rows.Add(i, generateName(5), generateName(7), alpha3, rndGender(), rndDOB(), paxType, rndTravelDoc(alpha2), docType, rndExpiryDate());
+                        dgTable.Rows.Add(i, generateName(5), generateName(7), alpha3, rndGender(), rndDOB(), paxType, rndTravelDoc(alpha2), type1, rndExpiryDate());
                 }
                 else
                 {
-                        dgTable.Rows.Add(i, generateName(5), generateName(7), alpha3, rndTravelDoc(alpha2), rndGender(), rndDOB(), paxType, docType, rndExpiryDate());
+                        dgTable.Rows.Add(i, generateName(5), generateName(7), alpha3, rndTravelDoc(alpha2), rndGender(), rndDOB(), paxType, type1, rndExpiryDate());
                 }
 
             }
@@ -187,68 +170,42 @@ namespace FlightManufestMaker
 
             try
             {
-                //manifestExcel = new ExcelApp.Application();
                 manifestExcel.Visible = false;
                 manifestExcel.DisplayAlerts = false;
-                //manifestWorkbook = manifestExcel.Workbooks.Add(Type.Missing);
-
 
                 ExcelApp.Worksheet manifestWorksheet = (ExcelApp.Worksheet)manifestWorkbook.ActiveSheet;
-                //manifestWorksheet = (ExcelApp.Worksheet)manifestWorkbook.ActiveSheet;
                 manifestWorksheet.Name = "Passenger Data";
-
-                
                 manifestWorksheet.Cells[1, 1] = txtShipFlight.Text;
                 manifestWorksheet.Cells.Font.Size = 11;
-            
 
-            for (int i = 1; i <= dgTable.Columns.Count; i++)
-            {
-                manifestWorksheet.Cells[2, i] = dgTable.Columns[i - 1].ColumnName;
-                manifestWorksheet.Cells.Font.Color = System.Drawing.Color.Black;
-            }
+                for (int i = 1; i <= dgTable.Columns.Count; i++)
+                {
+                    manifestWorksheet.Cells[2, i] = dgTable.Columns[i - 1].ColumnName;
+                    manifestWorksheet.Cells.Font.Color = System.Drawing.Color.Black;
+                }
 
+                int worksheetRow = 2;
 
+                foreach (DataRow datarow in dgTable.Rows)
+                {
+                    worksheetRow += 1;
 
-
-
-            int worksheetRow = 2;
-
-            foreach (DataRow datarow in dgTable.Rows)
-            {
-                worksheetRow += 1;
-                                               
                     for (int i = 1; i <= dgTable.Columns.Count; i++)
                     {
-                    manifestWorksheet.Cells[worksheetRow, i] = "'" + datarow[i - 1].ToString();
-                    
+                        manifestWorksheet.Cells[worksheetRow, i] = "'" + datarow[i - 1].ToString();
                     }
 
-            }
-
-
-            
+                }
 
                 manifestWorkbook.SaveAs(fileName);
                 manifestWorkbook.Close();
-                //manifestExcel.Quit();
-
             }
-
-            
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
-
             }
             finally
             {
-                //manifestWorksheet = null;
-                //manifestCellrange = null;
-                //manifestWorkbook = null;
-
-                //if (manifestWorkbook != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(manifestWorkbook);
-                //GC.Collect();
                 manifestExcel?.Quit();
                 Thread.Sleep(5000);
             }
@@ -261,6 +218,7 @@ namespace FlightManufestMaker
             btnGenerate.Enabled = false;
             int paxCount = Int32.Parse(txtPaxCount.Text);
             addRows(paxCount);
+            dataGridView1.ReadOnly = false;
             btnSave.Enabled = true;
         }
 
@@ -284,7 +242,6 @@ namespace FlightManufestMaker
             }
 
             fileName += txtShipFlight.Text + "_";
-
             fileName += DateTime.Now.ToString("yyyyMMddHHmmss");
 
             saveManifest(fileName);
@@ -314,18 +271,16 @@ namespace FlightManufestMaker
             {
                 dgTable = getShipManifestColums();
                 lblName.Text = "Ship Name";
-                
             }
             else
             {
                 dgTable = getFlightManifestColums();
                 lblName.Text = "Flight Name";
-
             }
 
             dataGridView1.DataSource = null;
             dataGridView1.DataSource = dgTable;
-
+            dataGridView1.ReadOnly = true;
             txtShipFlight.ReadOnly = false;
             txtPaxCount.ReadOnly = false;
 
@@ -385,6 +340,8 @@ namespace FlightManufestMaker
                 var GetDirectory = AppContext.BaseDirectory;
 
                 dtCountry = ReadExcel(GetDirectory + "\\Countries.xlsx"); //read excel file
+
+                dataGridView1.ReadOnly = true;
             }
             catch (Exception ex)
             {
@@ -403,15 +360,42 @@ namespace FlightManufestMaker
             return countryRow;
         }
 
+        private void loadDocTypes()
+        {
+            try
+            {
+                var GetDirectory = AppContext.BaseDirectory;
+
+                dtDocType = ReadExcel(GetDirectory + "\\DocTypes.xlsx"); //read excel file
+
+                dataGridView1.ReadOnly = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message.ToString(), "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private DataRow rndDocType()
+        {
+
+            Random r = new Random();
+            int rInt = r.Next(1, dtDocType.Rows.Count);
+
+            DataRow docTypeRow = dtDocType.Rows[rInt];
+
+            return docTypeRow;
+        }
+
         private DataTable ReadExcel(string fileName)
         {
-            ExcelApp.Application countryExcel = new ExcelApp.Application();
-            ExcelApp.Workbook excelBook = countryExcel.Workbooks.Open(fileName);
-
+            //New Excel COM object
+            ExcelApp.Application myExcel = new ExcelApp.Application();
+            
             try
             {
                 //Open Excel file
-
+                ExcelApp.Workbook excelBook = myExcel.Workbooks.Open(fileName);
                 ExcelApp._Worksheet excelSheet = excelBook.Sheets[1];
                 ExcelApp.Range excelRange = excelSheet.UsedRange;
 
@@ -419,6 +403,7 @@ namespace FlightManufestMaker
                 int cols = excelRange.Columns.Count;
 
                 //Set DataTable Name and Columns Name
+                DataTable myTable;
                 myTable = new DataTable(excelSheet.Name);
 
                 //first row using for heading
@@ -426,6 +411,8 @@ namespace FlightManufestMaker
                 {
                     myTable.Columns.Add(excelRange.Cells[1, i].Value2.ToString(), typeof(string));
                 }
+
+                DataRow myNewRow;
 
                 if (rows > 1)
                 {
@@ -470,9 +457,7 @@ namespace FlightManufestMaker
             }
             finally
             {
-                //if (excelBook != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(excelBook);
-                //GC.Collect();
-                countryExcel?.Quit();
+                myExcel?.Quit();
                 Thread.Sleep(5000);
             }
         }
@@ -480,7 +465,43 @@ namespace FlightManufestMaker
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             GC.Collect();
+        }
 
+        private void updatePaxCount()
+        {
+            gridRaws = (dataGridView1.Rows.Count - 1);
+
+            lblRows.Text = gridRaws.ToString() + " rows to save";
+
+            if (gridRaws>0)
+            {
+                btnSave.Enabled = true;
+            }
+            else
+            {
+                btnSave.Enabled = false;
+            }
+
+        }
+
+        private void dataGridView1_UserAddedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            updatePaxCount();        
+        }
+
+        private void dataGridView1_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            updatePaxCount();
+        }
+
+        private void dataGridView1_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            updatePaxCount();
+        }
+
+        private void dataGridView1_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
+        {
+            updatePaxCount();
         }
     }
 }
